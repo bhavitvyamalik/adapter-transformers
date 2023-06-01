@@ -28,7 +28,6 @@ from transformers.deepspeed import is_deepspeed_zero3_enabled
 from ...activations import ACT2FN
 from ...adapters.composition import adjust_tensors_for_parallel
 from ...adapters.context import ForwardContext
-from ...adapters.lora import Linear as LoRALinear
 from ...adapters.mixins.hubert import (
     HubertEncoderLayerAdaptersMixin,
     HubertEncoderLayerStableLayerNormAdaptersMixin,
@@ -427,9 +426,9 @@ class HubertAttention(nn.Module):
         self.scaling = self.head_dim**-0.5
         self.is_decoder = is_decoder
 
-        self.k_proj = LoRALinear(embed_dim, embed_dim, "selfattn", config, attn_key="k", bias=bias)
-        self.v_proj = LoRALinear(embed_dim, embed_dim, "selfattn", config, attn_key="v", bias=bias)
-        self.q_proj = LoRALinear(embed_dim, embed_dim, "selfattn", config, attn_key="q", bias=bias)
+        self.k_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.v_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
         self.prefix_tuning = PrefixTuningShim(None, config)
@@ -566,17 +565,17 @@ class HubertAttention(nn.Module):
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2FeedForward with Wav2Vec2->Hubert
 class HubertFeedForward(nn.Module):
-    def __init__(self, config: HubertConfig):
+    def __init__(self, config):
         super().__init__()
         self.intermediate_dropout = nn.Dropout(config.activation_dropout)
 
-        self.intermediate_dense = LoRALinear(config.hidden_size, config.intermediate_size, "intermediate", config)
+        self.intermediate_dense = nn.Linear(config.hidden_size, config.intermediate_size)
         if isinstance(config.hidden_act, str):
             self.intermediate_act_fn = ACT2FN[config.hidden_act]
         else:
             self.intermediate_act_fn = config.hidden_act
 
-        self.output_dense = LoRALinear(config.intermediate_size, config.hidden_size, "output", config)
+        self.output_dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.output_dropout = nn.Dropout(config.hidden_dropout)
 
     def forward(self, hidden_states):
@@ -591,7 +590,7 @@ class HubertFeedForward(nn.Module):
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2EncoderLayer with Wav2Vec2->Hubert
 class HubertEncoderLayer(HubertEncoderLayerAdaptersMixin, nn.Module):
-    def __init__(self, config: HubertConfig):
+    def __init__(self, config):
         super().__init__()
         self.attention = HubertAttention(
             config,
@@ -631,7 +630,7 @@ class HubertEncoderLayer(HubertEncoderLayerAdaptersMixin, nn.Module):
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2EncoderLayerStableLayerNorm with Wav2Vec2->Hubert
 class HubertEncoderLayerStableLayerNorm(HubertEncoderLayerStableLayerNormAdaptersMixin, nn.Module):
-    def __init__(self, config: HubertConfig):
+    def __init__(self, config):
         super().__init__()
         self.attention = HubertAttention(
             config,
@@ -677,7 +676,7 @@ class HubertEncoderLayerStableLayerNorm(HubertEncoderLayerStableLayerNormAdapter
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2Encoder with Wav2Vec2->Hubert
 class HubertEncoder(nn.Module):
-    def __init__(self, config: HubertConfig):
+    def __init__(self, config):
         super().__init__()
         self.config = config
         self.pos_conv_embed = HubertPositionalConvEmbedding(config)
@@ -765,7 +764,7 @@ class HubertEncoder(nn.Module):
 
 # Copied from transformers.models.wav2vec2.modeling_wav2vec2.Wav2Vec2EncoderStableLayerNorm with Wav2Vec2->Hubert
 class HubertEncoderStableLayerNorm(nn.Module):
-    def __init__(self, config: HubertConfig):
+    def __init__(self, config):
         super().__init__()
         self.config = config
         self.pos_conv_embed = HubertPositionalConvEmbedding(config)
