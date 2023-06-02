@@ -1108,7 +1108,7 @@ class HubertModel(HubertModelAdaptersMixin, HubertPreTrainedModel):
         hidden_states = self.feature_projection(extract_features)
         hidden_states = self._mask_hidden_states(hidden_states, mask_time_indices=mask_time_indices)
 
-        encoder_outputs = self.encoder(
+        self.encoder_outputs = self.encoder(
             hidden_states,
             attention_mask=attention_mask,
             output_attentions=output_attentions,
@@ -1116,15 +1116,15 @@ class HubertModel(HubertModelAdaptersMixin, HubertPreTrainedModel):
             return_dict=return_dict,
         )
 
-        hidden_states = encoder_outputs[0]
+        hidden_states = self.encoder_outputs[0]
 
         if not return_dict:
-            return (hidden_states,) + encoder_outputs[1:]
+            return (hidden_states,) + self.encoder_outputs[1:]
 
         return BaseModelOutput(
             last_hidden_state=hidden_states,
-            hidden_states=encoder_outputs.hidden_states,
-            attentions=encoder_outputs.attentions,
+            hidden_states=self.encoder_outputs.hidden_states,
+            attentions=self.encoder_outputs.attentions,
         )
 
 

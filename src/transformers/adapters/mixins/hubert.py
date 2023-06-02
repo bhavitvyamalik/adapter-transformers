@@ -30,7 +30,7 @@ class HubertModelAdaptersMixin(ModelAdaptersMixin):
     """Adds adapters to the Hubert module."""
 
     def iter_layers(self) -> Iterable[Tuple[int, nn.Module]]:
-        for i, layer in enumerate(self.HubertEncoder.layers):
+        for i, layer in enumerate(self.encoder_outputs.layers):
             yield i, layer
 
 
