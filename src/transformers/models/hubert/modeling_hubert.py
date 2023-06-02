@@ -592,6 +592,7 @@ class HubertFeedForward(nn.Module):
 class HubertEncoderLayer(HubertEncoderLayerAdaptersMixin, nn.Module):
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.attention = HubertAttention(
             config,
             embed_dim=config.hidden_size,
@@ -632,6 +633,7 @@ class HubertEncoderLayer(HubertEncoderLayerAdaptersMixin, nn.Module):
 class HubertEncoderLayerStableLayerNorm(HubertEncoderLayerStableLayerNormAdaptersMixin, nn.Module):
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.attention = HubertAttention(
             config,
             embed_dim=config.hidden_size,
