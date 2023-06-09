@@ -26,7 +26,6 @@ from torch.nn import CrossEntropyLoss
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 
 from ...activations import ACT2FN
-from ...adapters.composition import adjust_tensors_for_parallel
 from ...adapters.context import ForwardContext
 from ...adapters.mixins.hubert import (
     HubertEncoderLayerAdaptersMixin,
@@ -652,7 +651,7 @@ class HubertEncoderLayerStableLayerNorm(HubertEncoderLayerStableLayerNormAdapter
             hidden_states, attention_mask=attention_mask, output_attentions=output_attentions
         )
         sa_output = self.dropout(sa_output)
-        sa_output = self.attention_adapters(sa_output, attn_residual)  # (bs, seq_length, dim)
+        sa_output = self.attention_adapters(sa_output, attn_residual, None)  # (bs, seq_length, dim)
 
         # Feed Forward Network
         ffn_output = self.feed_forward(sa_output)  # (bs, seq_length, dim)
