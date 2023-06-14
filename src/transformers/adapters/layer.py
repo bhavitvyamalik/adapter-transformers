@@ -28,17 +28,16 @@ class AdapterLayerBase(ABC):
 
     def get_active_setup(self, module_dict):
         if getattr(self.config, "is_adaptable", False):
-            print("inside gettattr")
             # First check current context before falling back to defined setup
             context = AdapterSetup.get_context()
+            print(context, "context")
             if context is not None:
                 adapter_setup = context.adapter_setup
-                print("Line 36", adapter_setup)
             else:
+                print("self.config", self.config)
+                print("self.config.adapters", self.config.adapters)
                 adapter_setup = self.config.adapters.active_setup
-                print("Line 38", adapter_setup)
         else:
-            print("set to None")
             adapter_setup = None
         skip_adapters = adapter_setup is None or (
             self.config.adapters.skip_layers is not None and self.layer_idx in self.config.adapters.skip_layers
