@@ -26,7 +26,7 @@ from torch.nn import CrossEntropyLoss
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 
 from ...activations import ACT2FN
-from ...adapters.context import ForwardContext
+# from ...adapters.context import ForwardContext
 from ...adapters.mixins.hubert import (
     HubertEncoderLayerAdaptersMixin,
     HubertEncoderLayerStableLayerNormAdaptersMixin,
