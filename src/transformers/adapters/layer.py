@@ -30,12 +30,9 @@ class AdapterLayerBase(ABC):
         if getattr(self.config, "is_adaptable", False):
             # First check current context before falling back to defined setup
             context = AdapterSetup.get_context()
-            print(context, "context")
             if context is not None:
                 adapter_setup = context.adapter_setup
             else:
-                print("self.config", self.config)
-                print("self.config.adapters", self.config.adapters)
                 adapter_setup = self.config.adapters.active_setup
         else:
             adapter_setup = None
@@ -533,8 +530,9 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         # Replicate in both directions as residual might be larger (e.g. GPT-J)
         (hidden_states,) = adjust_tensors_for_parallel(residual_input, hidden_states)
         adapter_setup = self.get_active_setup(self.adapters)
-        print("adapters", self.adapters)
-        print("adapter_setup", adapter_setup)
+        print(adapter_setup, "adapter_setup")
+        # hard code
+        # adapter_setup = None
         if adapter_setup is not None:
             input_hidden_states = hidden_states
 
