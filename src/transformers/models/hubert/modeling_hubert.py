@@ -26,7 +26,7 @@ from torch.nn import CrossEntropyLoss
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 
 from ...activations import ACT2FN
-# from ...adapters.context import ForwardContext
+from ...adapters.context import ForwardContext
 from ...adapters.mixins.hubert import (
     HubertEncoderLayerAdaptersMixin,
     HubertEncoderLayerStableLayerNormAdaptersMixin,
@@ -1047,7 +1047,7 @@ class HubertModel(HubertModelAdaptersMixin, HubertPreTrainedModel):
 
     @add_start_docstrings_to_model_forward(HUBERT_INPUTS_DOCSTRING)
     @replace_return_docstrings(output_type=BaseModelOutput, config_class=_CONFIG_FOR_DOC)
-    @ForwardContext.wrap
+    # @ForwardContext.wrap
     def forward(
         self,
         input_values: Optional[torch.Tensor],
