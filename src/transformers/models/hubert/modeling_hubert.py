@@ -592,7 +592,7 @@ class HubertEncoderLayer(HubertEncoderLayerAdaptersMixin, nn.Module):
             is_decoder=False,
         )
         self.dropout = nn.Dropout(config.hidden_dropout)
-        self.sa_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.feed_forward = HubertFeedForward(config)
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
@@ -604,13 +604,16 @@ class HubertEncoderLayer(HubertEncoderLayerAdaptersMixin, nn.Module):
             hidden_states, attention_mask=attention_mask, output_attentions=output_attentions
         )
         sa_output = self.dropout(sa_output)
-        sa_output = self.attention_adapters(sa_output, attn_residual, self.sa_layer_norm)  # (bs, seq_length, dim)
+        sa_output = self.attention_adapters(sa_output, attn_residual, None)  # (bs, seq_length, dim)
 
+        sa_output = self.layer_norm(sa_output)
         # Feed Forward Network
         ffn_output = self.feed_forward(sa_output)  # (bs, seq_length, dim)
         ffn_output: torch.Tensor = self.output_adapters(
-            ffn_output, sa_output, self.final_layer_norm
+            ffn_output, sa_output, None
         )  # (bs, seq_length, dim)
+
+        ffn_output = self.final_layer_norm(ffn_output)
 
         outputs = (ffn_output,)
 
@@ -654,9 +657,10 @@ class HubertEncoderLayerStableLayerNorm(HubertEncoderLayerStableLayerNormAdapter
         sa_output = self.attention_adapters(sa_output, attn_residual, None)  # (bs, seq_length, dim)
 
         # Feed Forward Network
-        ffn_output = self.feed_forward(sa_output)  # (bs, seq_length, dim)
+        ffn_output = self.final_layer_norm(sa_output)
+        ffn_output = self.feed_forward(ffn_output)  # (bs, seq_length, dim)
         ffn_output: torch.Tensor = self.output_adapters(
-            ffn_output, sa_output, self.final_layer_norm
+            ffn_output, sa_output, None
         )  # (bs, seq_length, dim)
 
         outputs = (ffn_output,)
