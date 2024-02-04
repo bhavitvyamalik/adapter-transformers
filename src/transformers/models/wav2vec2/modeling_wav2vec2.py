@@ -26,6 +26,13 @@ from torch import nn
 from torch.nn import CrossEntropyLoss
 
 from ...activations import ACT2FN
+from ...adapters.context import ForwardContext
+from ...adapters.mixins.wav2vec2 import (
+    Wav2Vec2EncoderLayerAdaptersMixin,
+    Wav2Vec2EncoderLayerStableLayerNormAdaptersMixin,
+    Wav2Vec2ModelAdaptersMixin,
+    Wav2Vec2ModelWithHeadsAdaptersMixin,
+)
 from ...deepspeed import is_deepspeed_zero3_enabled
 from ...modeling_outputs import (
     BaseModelOutput,
@@ -84,6 +91,7 @@ WAV_2_VEC_2_PRETRAINED_MODEL_ARCHIVE_LIST = [
     "facebook/wav2vec2-large-960h",
     "facebook/wav2vec2-large-960h-lv60",
     "facebook/wav2vec2-large-960h-lv60-self",
+    "facebook/wav2vec2-large-xlsr-53",
     # See all Wav2Vec2 models at https://huggingface.co/models?filter=wav2vec2
 ]
 
@@ -488,6 +496,7 @@ class Wav2Vec2Attention(nn.Module):
 
     def __init__(
         self,
+        config: Wav2Vec2Config,
         embed_dim: int,
         num_heads: int,
         dropout: float = 0.0,
@@ -661,44 +670,59 @@ class Wav2Vec2FeedForward(nn.Module):
         return hidden_states
 
 
-class Wav2Vec2EncoderLayer(nn.Module):
+class Wav2Vec2EncoderLayer(Wav2Vec2EncoderLayerAdaptersMixin, nn.Module):
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.attention = Wav2Vec2Attention(
+            config,
             embed_dim=config.hidden_size,
             num_heads=config.num_attention_heads,
             dropout=config.attention_dropout,
             is_decoder=False,
         )
         self.dropout = nn.Dropout(config.hidden_dropout)
-        self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.sa_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.feed_forward = Wav2Vec2FeedForward(config)
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+        self._init_adapter_modules()
+
     def forward(self, hidden_states, attention_mask=None, output_attentions=False):
         attn_residual = hidden_states
-        hidden_states, attn_weights, _ = self.attention(
+        sa_output, sa_weights, _ = self.attention(
             hidden_states, attention_mask=attention_mask, output_attentions=output_attentions
         )
-        hidden_states = self.dropout(hidden_states)
-        hidden_states = attn_residual + hidden_states
+        sa_output = self.dropout(sa_output)
+        sa_output = self.attention_adapters(sa_output, attn_residual, self.sa_layer_norm)  # (bs, seq_length, dim)
 
-        hidden_states = self.layer_norm(hidden_states)
-        hidden_states = hidden_states + self.feed_forward(hidden_states)
-        hidden_states = self.final_layer_norm(hidden_states)
+        # hidden_states = self.dropout(hidden_states)
+        # hidden_states = attn_residual + hidden_states
 
-        outputs = (hidden_states,)
+        # hidden_states = self.layer_norm(hidden_states)
+        # hidden_states = hidden_states + self.feed_forward(hidden_states)
+        # hidden_states = self.final_layer_norm(hidden_states)
+
+        # Feed Forward Network
+        ffn_output = self.feed_forward(sa_output)  # (bs, seq_length, dim)
+        ffn_output: torch.Tensor = self.output_adapters(
+            ffn_output, sa_output, self.final_layer_norm
+        )  # (bs, seq_length, dim)
+
+        outputs = (ffn_output,)
 
         if output_attentions:
-            outputs += (attn_weights,)
+            outputs += (sa_weights,)
 
         return outputs
 
 
-class Wav2Vec2EncoderLayerStableLayerNorm(nn.Module):
+class Wav2Vec2EncoderLayerStableLayerNorm(Wav2Vec2EncoderLayerStableLayerNormAdaptersMixin, nn.Module):
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.attention = Wav2Vec2Attention(
+            config,
             embed_dim=config.hidden_size,
             num_heads=config.num_attention_heads,
             dropout=config.attention_dropout,
@@ -708,6 +732,8 @@ class Wav2Vec2EncoderLayerStableLayerNorm(nn.Module):
         self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.feed_forward = Wav2Vec2FeedForward(config)
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+
+        self._init_adapter_modules()
 
     def forward(
         self,
@@ -717,17 +743,26 @@ class Wav2Vec2EncoderLayerStableLayerNorm(nn.Module):
     ):
         attn_residual = hidden_states
         hidden_states = self.layer_norm(hidden_states)
-        hidden_states, attn_weights, _ = self.attention(
+        sa_output, sa_weights, _  = self.attention(
             hidden_states, attention_mask=attention_mask, output_attentions=output_attentions
         )
-        hidden_states = self.dropout(hidden_states)
-        hidden_states = attn_residual + hidden_states
-        hidden_states = hidden_states + self.feed_forward(self.final_layer_norm(hidden_states))
+        # hidden_states = self.dropout(hidden_states)
+        # hidden_states = attn_residual + hidden_states
+        # hidden_states = hidden_states + self.feed_forward(self.final_layer_norm(hidden_states))
 
-        outputs = (hidden_states,)
+        sa_output = self.dropout(sa_output)
+        sa_output = self.attention_adapters(sa_output, attn_residual, None)  # (bs, seq_length, dim)
+
+        # Feed Forward Network
+        ffn_output = self.feed_forward(sa_output)  # (bs, seq_length, dim)
+        ffn_output: torch.Tensor = self.output_adapters(
+            ffn_output, sa_output, self.final_layer_norm
+        )  # (bs, seq_length, dim)
+
+        outputs = (ffn_output,)
 
         if output_attentions:
-            outputs += (attn_weights,)
+            outputs += (sa_weights,)
 
         return outputs
 
@@ -1189,7 +1224,7 @@ WAV_2_VEC_2_INPUTS_DOCSTRING = r"""
     "The bare Wav2Vec2 Model transformer outputting raw hidden-states without any specific head on top.",
     WAV_2_VEC_2_START_DOCSTRING,
 )
-class Wav2Vec2Model(Wav2Vec2PreTrainedModel):
+class Wav2Vec2Model(Wav2Vec2ModelAdaptersMixin, Wav2Vec2PreTrainedModel):
     def __init__(self, config: Wav2Vec2Config):
         super().__init__(config)
         self.config = config
@@ -1204,6 +1239,8 @@ class Wav2Vec2Model(Wav2Vec2PreTrainedModel):
             self.encoder = Wav2Vec2EncoderStableLayerNorm(config)
         else:
             self.encoder = Wav2Vec2Encoder(config)
+
+        self._init_adapter_modules()
 
         self.adapter = Wav2Vec2Adapter(config) if config.add_adapter else None
 
@@ -1283,6 +1320,7 @@ class Wav2Vec2Model(Wav2Vec2PreTrainedModel):
         modality="audio",
         expected_output=_EXPECTED_OUTPUT_SHAPE,
     )
+    @ForwardContext.wrap
     def forward(
         self,
         input_values: Optional[torch.Tensor],
@@ -1609,7 +1647,7 @@ class Wav2Vec2ForMaskedLM(Wav2Vec2PreTrainedModel):
     """Wav2Vec2 Model with a `language modeling` head on top for Connectionist Temporal Classification (CTC).""",
     WAV_2_VEC_2_START_DOCSTRING,
 )
-class Wav2Vec2ForCTC(Wav2Vec2PreTrainedModel):
+class Wav2Vec2ForCTC(Wav2Vec2ModelWithHeadsAdaptersMixin, Wav2Vec2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
 
@@ -1738,7 +1776,7 @@ class Wav2Vec2ForCTC(Wav2Vec2PreTrainedModel):
     """,
     WAV_2_VEC_2_START_DOCSTRING,
 )
-class Wav2Vec2ForSequenceClassification(Wav2Vec2PreTrainedModel):
+class Wav2Vec2ForSequenceClassification(Wav2Vec2ModelWithHeadsAdaptersMixin, Wav2Vec2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
 

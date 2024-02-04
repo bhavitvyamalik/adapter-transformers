@@ -20,6 +20,7 @@ MODELS_WITH_ADAPTERS = [
     "deberta_v2",
     "vit",
     "clip",
+    "wav2vec2",
 ]
 
 IGNORE_NOT_IMPLEMENTING_MIXIN = [

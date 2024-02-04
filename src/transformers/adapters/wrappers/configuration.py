@@ -55,6 +55,7 @@ CONFIG_CLASS_KEYS_MAPPING = {
     },
     "vit": {},
     "xlm_roberta": {},
+    "wav2vec2": {},
 }
 SUBMODEL_NAMES = {"clip": ["vision_config", "text_config"], "encoder-decoder": ["encoder", "decoder"]}
 
