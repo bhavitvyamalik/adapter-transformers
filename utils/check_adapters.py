@@ -21,6 +21,7 @@ MODELS_WITH_ADAPTERS = [
     "vit",
     "clip",
     "hubert",
+    "wav2vec2",
 ]
 
 IGNORE_NOT_IMPLEMENTING_MIXIN = [
