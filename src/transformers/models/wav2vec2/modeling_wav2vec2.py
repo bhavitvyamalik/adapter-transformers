@@ -754,9 +754,10 @@ class Wav2Vec2EncoderLayerStableLayerNorm(Wav2Vec2EncoderLayerStableLayerNormAda
         sa_output = self.attention_adapters(sa_output, attn_residual, None)  # (bs, seq_length, dim)
 
         # Feed Forward Network
-        ffn_output = self.feed_forward(sa_output)  # (bs, seq_length, dim)
+        ffn_output = self.final_layer_norm(sa_output)
+        ffn_output = self.feed_forward(ffn_output)  # (bs, seq_length, dim)
         ffn_output: torch.Tensor = self.output_adapters(
-            ffn_output, sa_output, self.final_layer_norm
+            ffn_output, sa_output, None
         )  # (bs, seq_length, dim)
 
         outputs = (ffn_output,)
