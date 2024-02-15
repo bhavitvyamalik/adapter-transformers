@@ -696,13 +696,6 @@ class Wav2Vec2EncoderLayer(Wav2Vec2EncoderLayerAdaptersMixin, nn.Module):
         sa_output = self.dropout(sa_output)
         sa_output = self.attention_adapters(sa_output, attn_residual, self.layer_norm)  # (bs, seq_length, dim)
 
-        # hidden_states = self.dropout(hidden_states)
-        # hidden_states = attn_residual + hidden_states
-
-        # hidden_states = self.layer_norm(hidden_states)
-        # hidden_states = hidden_states + self.feed_forward(hidden_states)
-        # hidden_states = self.final_layer_norm(hidden_states)
-
         # Feed Forward Network
         ffn_output = self.feed_forward(sa_output)  # (bs, seq_length, dim)
         ffn_output: torch.Tensor = self.output_adapters(
@@ -743,22 +736,24 @@ class Wav2Vec2EncoderLayerStableLayerNorm(Wav2Vec2EncoderLayerStableLayerNormAda
     ):
         attn_residual = hidden_states
         hidden_states = self.layer_norm(hidden_states)
-        sa_output, sa_weights, _  = self.attention(
+        sa_output, sa_weights, _ = self.attention(
             hidden_states, attention_mask=attention_mask, output_attentions=output_attentions
         )
-        # hidden_states = self.dropout(hidden_states)
-        # hidden_states = attn_residual + hidden_states
-        # hidden_states = hidden_states + self.feed_forward(self.final_layer_norm(hidden_states))
-
         sa_output = self.dropout(sa_output)
         sa_output = self.attention_adapters(sa_output, attn_residual, None)  # (bs, seq_length, dim)
 
         # Feed Forward Network
         ffn_output = self.final_layer_norm(sa_output)
         ffn_output = self.feed_forward(ffn_output)  # (bs, seq_length, dim)
+
+        ffn_output = sa_output + ffn_output
         ffn_output: torch.Tensor = self.output_adapters(
-            ffn_output, sa_output, None
+            ffn_output, ffn_output, None
         )  # (bs, seq_length, dim)
+
+        # ffn_output: torch.Tensor = self.output_adapters( # trying something pls work
+        #     ffn_output, sa_output, None
+        # )  # (bs, seq_length, dim)
 
         outputs = (ffn_output,)
 
@@ -1899,7 +1894,7 @@ class Wav2Vec2ForSequenceClassification(Wav2Vec2ModelWithHeadsAdaptersMixin, Wav
     """,
     WAV_2_VEC_2_START_DOCSTRING,
 )
-class Wav2Vec2ForAudioFrameClassification(Wav2Vec2PreTrainedModel):
+class Wav2Vec2ForAudioFrameClassification(Wav2Vec2ModelWithHeadsAdaptersMixin, Wav2Vec2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
 
