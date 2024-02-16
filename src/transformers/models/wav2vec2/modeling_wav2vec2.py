@@ -734,40 +734,39 @@ class Wav2Vec2EncoderLayerStableLayerNorm(Wav2Vec2EncoderLayerStableLayerNormAda
         attention_mask: Optional[torch.Tensor] = None,
         output_attentions: bool = False,
     ):
-        attn_residual = hidden_states
-        hidden_states = self.layer_norm(hidden_states)
-        sa_output, sa_weights, _ = self.attention(
-            hidden_states, attention_mask=attention_mask, output_attentions=output_attentions
-        )
-        sa_output = self.attention_adapters(sa_output, sa_output, None)  # (bs, seq_length, dim)
-        sa_output = self.dropout(sa_output)
-        sa_output = attn_residual + sa_output
-        
-        sa_output = self.layer_norm(sa_output)
-        sa_output = sa_output + self.feed_forward(sa_output)
-        sa_output = self.final_layer_norm(sa_output)        
-        
-        ffn_output: torch.Tensor = self.output_adapters( # trying something pls work
-            sa_output, sa_output, None
-        )  # (bs, seq_length, dim)
-
-
         # attn_residual = hidden_states
         # hidden_states = self.layer_norm(hidden_states)
         # sa_output, sa_weights, _ = self.attention(
         #     hidden_states, attention_mask=attention_mask, output_attentions=output_attentions
         # )
-        # sa_output = self.dropout(sa_output)
-        # # sa_output = self.attention_adapters(sa_output, attn_residual, None)  # (bs, seq_length, dim)
         # sa_output = self.attention_adapters(sa_output, sa_output, None)  # (bs, seq_length, dim)
-
-        # # Feed Forward Network
-        # ffn_output = self.final_layer_norm(sa_output)
-        # ffn_output = self.feed_forward(ffn_output)  # (bs, seq_length, dim)
-
+        # sa_output = self.dropout(sa_output)
+        # sa_output = attn_residual + sa_output
+        
+        # sa_output = self.layer_norm(sa_output)
+        # sa_output = sa_output + self.feed_forward(sa_output)
+        # sa_output = self.final_layer_norm(sa_output)        
+        
         # ffn_output: torch.Tensor = self.output_adapters( # trying something pls work
-        #     ffn_output, sa_output, None
+        #     sa_output, sa_output, None
         # )  # (bs, seq_length, dim)
+
+
+        attn_residual = hidden_states
+        hidden_states = self.layer_norm(hidden_states)
+        sa_output, sa_weights, _ = self.attention(
+            hidden_states, attention_mask=attention_mask, output_attentions=output_attentions
+        )
+        sa_output = self.dropout(sa_output)
+        sa_output = self.attention_adapters(sa_output, attn_residual, None)  # (bs, seq_length, dim)
+
+        # Feed Forward Network
+        ffn_output = self.final_layer_norm(sa_output)
+        ffn_output = self.feed_forward(ffn_output)  # (bs, seq_length, dim)
+
+        ffn_output: torch.Tensor = self.output_adapters( # trying something pls work
+            ffn_output, sa_output, None
+        )  # (bs, seq_length, dim)
 
         outputs = (ffn_output,)
 
