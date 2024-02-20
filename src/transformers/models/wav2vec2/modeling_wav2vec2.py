@@ -725,6 +725,7 @@ class Wav2Vec2EncoderLayerStableLayerNorm(Wav2Vec2EncoderLayerStableLayerNormAda
         self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.feed_forward = Wav2Vec2FeedForward(config)
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.new_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
         self._init_adapter_modules()
 
@@ -765,7 +766,7 @@ class Wav2Vec2EncoderLayerStableLayerNorm(Wav2Vec2EncoderLayerStableLayerNormAda
         ffn_output = self.feed_forward(ffn_output)  # (bs, seq_length, dim)
 
         ffn_output: torch.Tensor = self.output_adapters( # trying something pls work
-            ffn_output, sa_output, self.final_layer_norm
+            ffn_output, sa_output, self.new_layer_norm
         )  # (bs, seq_length, dim)
 
         outputs = (ffn_output,)
