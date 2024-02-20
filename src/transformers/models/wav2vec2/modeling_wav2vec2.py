@@ -765,7 +765,7 @@ class Wav2Vec2EncoderLayerStableLayerNorm(Wav2Vec2EncoderLayerStableLayerNormAda
         ffn_output = self.feed_forward(ffn_output)  # (bs, seq_length, dim)
 
         ffn_output: torch.Tensor = self.output_adapters( # trying something pls work
-            ffn_output, sa_output, None
+            ffn_output, sa_output, self.final_layer_norm
         )  # (bs, seq_length, dim)
 
         outputs = (ffn_output,)
