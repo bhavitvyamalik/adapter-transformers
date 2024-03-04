@@ -95,10 +95,10 @@ def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_st
     def lr_lambda(current_step: int):
         if current_step < num_warmup_steps:
             return float(current_step) / float(max(1, num_warmup_steps))
-        elif current_step >= num_warmup_steps and current_step < int(0.4 * num_training_steps):
+        elif current_step >= num_warmup_steps and current_step < int(0.5 * num_training_steps):
             return 1
         return max(
-            0.0, float(num_training_steps - current_step) / float(max(1, num_training_steps - num_warmup_steps))
+            0.0, float(num_training_steps - current_step) / float(max(1, num_training_steps - int(0.5 * num_training_steps)))
         )
 
     return LambdaLR(optimizer, lr_lambda, last_epoch)
