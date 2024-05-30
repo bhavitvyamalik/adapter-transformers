@@ -452,15 +452,18 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         first_adapter = self.adapters[adapter_setup.first()]
         print("batch split first_adapter", first_adapter)
         print("adapter_block", adapter_setup)
+        print()
         hidden_states, _, residual = first_adapter.pre_forward(hidden_states, input_tensor, layer_norm)
         children_hidden = []
         for i, adapter_block in enumerate(adapter_setup):
             print(f"adapter_block: {i}th {adapter_block}")
+            print(f"children_hidden: {children_hidden}")
             # compute ids of sequences thet should be passed to the ith adapter
             batch_idx = (
                 sum(adapter_setup.batch_sizes[:i]),
                 sum(adapter_setup.batch_sizes[: i + 1]),
             )
+            print(f"batch_idx: {batch_idx}")
             # Case 1: We have a nested stack -> call stack method
             if isinstance(adapter_block, Stack):
                 child, _, _ = self.adapter_stack(
@@ -495,6 +498,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             elif adapter_block in self.adapters:
 
                 adapter_layer = self.adapters[adapter_block]
+                print(f"adapter_layer inside block: {adapter_layer}")
                 context = ForwardContext.get_context()
                 layer_output = adapter_layer(
                     hidden_states[batch_idx[0] : batch_idx[1]],
