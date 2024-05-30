@@ -451,7 +451,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
 
         first_adapter = self.adapters[adapter_setup.first()]
         print("batch split first_adapter", first_adapter)
-        print("adapter_block", adapter_block)
+        print("adapter_block", adapter_setup)
         hidden_states, _, residual = first_adapter.pre_forward(hidden_states, input_tensor, layer_norm)
         children_hidden = []
         for i, adapter_block in enumerate(adapter_setup):
