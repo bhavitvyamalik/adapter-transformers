@@ -197,6 +197,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         Forwards the given input through the given stack of adapters.
         """
         for i, adapter_stack_layer in enumerate(adapter_setup):
+            print(f"adapter_stack_layer: {i}th {adapter_stack_layer}")
             # Break if setup is too deep
             if isinstance(adapter_stack_layer, AdapterCompositionBlock) and lvl >= 1:
                 raise ValueError(
@@ -221,6 +222,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                 )
             # Case 4: We have a nested batch split block -> call batchsplit method
             elif isinstance(adapter_stack_layer, BatchSplit):
+                print("batch one")
                 hidden_states = self.adapter_batchsplit(
                     adapter_stack_layer, hidden_states, input_tensor, layer_norm, lvl=lvl + 1
                 )
@@ -448,9 +450,12 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             )
 
         first_adapter = self.adapters[adapter_setup.first()]
+        print("batch split first_adapter", first_adapter)
+        print("adapter_block", adapter_block)
         hidden_states, _, residual = first_adapter.pre_forward(hidden_states, input_tensor, layer_norm)
         children_hidden = []
         for i, adapter_block in enumerate(adapter_setup):
+            print(f"adapter_block: {i}th {adapter_block}")
             # compute ids of sequences thet should be passed to the ith adapter
             batch_idx = (
                 sum(adapter_setup.batch_sizes[:i]),

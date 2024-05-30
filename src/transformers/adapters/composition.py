@@ -6,6 +6,7 @@ from typing import List, Set, Union
 class AdapterCompositionBlock(Sequence):
     def __init__(self, *children):
         self.children = [parse_composition(b, None) for b in children]
+        print(f"children: {self.children}")
 
     def __getitem__(self, key):
         return self.children[key]
@@ -25,8 +26,10 @@ class AdapterCompositionBlock(Sequence):
 
     def first(self):
         if not isinstance(self.children[0], AdapterCompositionBlock):
+            print("first function if", self.children[0])
             return self.children[0]
         else:
+            print("first function else", self.children[0].first())
             return self.children[0].first()
 
     def last(self):
