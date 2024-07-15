@@ -153,9 +153,16 @@ class Adapter(nn.Module):
 
         if self.original_ln_before:
             if layer_norm:
-                hidden_states = layer_norm(hidden_states + input_tensor)
+                if hidden_states is not None and input_tensor is not None:
+                    hidden_states = layer_norm(hidden_states + input_tensor)
+
+                elif hidden_states is None and input_tensor is not None:
+                    hidden_states = layer_norm(input_tensor)
             else:
-                hidden_states = hidden_states + input_tensor
+                if hidden_states is not None and input_tensor is not None:
+                    hidden_states = hidden_states + input_tensor
+                elif hidden_states is None:
+                    hidden_states = input_tensor
 
         if not self.residual_before_ln:
             residual = hidden_states
@@ -188,7 +195,10 @@ class Adapter(nn.Module):
 
         # if residual should be applied after layer norm, apply it here
         if not self.adapter_residual_before_ln:
-            output = output + residual_input
+            if residual_input is None:
+                output = output
+            else:
+                output = output + residual_input
 
         if self.use_gating and output_gating:
             return output, down, up, gate
@@ -210,9 +220,16 @@ class Adapter(nn.Module):
         """
         if self.original_ln_after:
             if layer_norm:
-                hidden_states = layer_norm(hidden_states + input_tensor)
+                if hidden_states is not None and input_tensor is not None:
+                    hidden_states = layer_norm(hidden_states + input_tensor)
+
+                elif hidden_states is None and input_tensor is not None:
+                    hidden_states = layer_norm(input_tensor)
             else:
-                hidden_states = hidden_states + input_tensor
+                if hidden_states is not None and input_tensor is not None:
+                    hidden_states = hidden_states + input_tensor
+                elif hidden_states is None:
+                    hidden_states = input_tensor
 
         return hidden_states
 
@@ -302,9 +319,16 @@ class ParallelAdapter(Adapter):
 
         if self.original_ln_after:
             if layer_norm:
-                hidden_states = layer_norm(hidden_states + input_tensor)
+                if hidden_states is not None and input_tensor is not None:
+                    hidden_states = layer_norm(hidden_states + input_tensor)
+
+                elif hidden_states is None and input_tensor is not None:
+                    hidden_states = layer_norm(input_tensor)
             else:
-                hidden_states = hidden_states + input_tensor
+                if hidden_states is not None and input_tensor is not None:
+                    hidden_states = hidden_states + input_tensor
+                elif hidden_states is None:
+                    hidden_states = input_tensor
 
         return hidden_states
 

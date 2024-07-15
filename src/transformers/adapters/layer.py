@@ -449,7 +449,9 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                     hidden_states.shape[0], adapter_setup.batch_sizes
                 )
             )
-
+        if adapter_setup.first() not in self.adapters:
+            return None
+        
         first_adapter = self.adapters[adapter_setup.first()]
         # print("batch split first_adapter", first_adapter)
         # print("adapter_block", adapter_setup)
@@ -559,13 +561,25 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             else:
                 raise ValueError(f"Invalid adapter setup {adapter_setup}")
 
-            last_adapter = self.adapters[adapter_setup.last()]
+            if adapter_setup.last() not in self.adapters:
+                last_adapter = self.adapters[adapter_setup[-2]]
+            else:
+                last_adapter = self.adapters[adapter_setup.last()]
             hidden_states = last_adapter.post_forward(hidden_states, input_hidden_states, residual_input, layer_norm)
 
         elif layer_norm:
-            hidden_states = layer_norm(hidden_states + residual_input)
+            if hidden_states is not None:
+                hidden_states = layer_norm(hidden_states + residual_input)
+
+            elif hidden_states is None:
+                hidden_states = layer_norm(residual_input)
+            
         else:
-            hidden_states = hidden_states + residual_input
+            if hidden_states is not None:
+                hidden_states = hidden_states + residual_input
+
+            elif hidden_states is None:
+                hidden_states = residual_input
 
         return hidden_states
 
