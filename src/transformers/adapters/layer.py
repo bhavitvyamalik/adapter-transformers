@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Mapping, Union
 
 import numpy as np
+import random
 import torch
 from torch import nn
 
@@ -99,6 +100,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         super().__init__()
         self.location_key = location_key
         self.config = config
+        self.count = 0
 
     def _init_adapter_modules(self):
         self.adapters = nn.ModuleDict(dict())
@@ -451,6 +453,11 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             )
         if adapter_setup.first() not in self.adapters:
             return None
+    
+        if self.layer_idx <= 23:
+            random.seed(self.count + self.layer_idx)
+            if random.random() <= 0.25:
+                return None
         
         first_adapter = self.adapters[adapter_setup.first()]
         # print("batch split first_adapter", first_adapter)
@@ -534,6 +541,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         Returns:
             torch.Tensor: Output hidden states of the adapter layer.
         """
+        self.count += 1
         # Batch sizes might be different due to prefix tuning w. Parallel block
         (residual_input,) = adjust_tensors_for_parallel(hidden_states, residual_input)
         # Replicate in both directions as residual might be larger (e.g. GPT-J)
