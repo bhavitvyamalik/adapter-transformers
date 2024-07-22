@@ -457,6 +457,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         if self.layer_idx <= 23:
             random.seed(self.count + self.layer_idx)
             if random.random() <= 0.25:
+                self.count += 1
                 return None
         
         first_adapter = self.adapters[adapter_setup.first()]
