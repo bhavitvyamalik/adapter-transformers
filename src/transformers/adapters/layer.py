@@ -451,14 +451,14 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                     hidden_states.shape[0], adapter_setup.batch_sizes
                 )
             )
-        if adapter_setup.first() not in self.adapters:
-            return None
+        # if adapter_setup.first() not in self.adapters:
+        #     return None
     
         if self.layer_idx <= 23:
             random.seed(self.count + self.layer_idx)
             if random.random() <= 0.25:
                 self.count += 1
-                return None
+                return hidden_states
         
         first_adapter = self.adapters[adapter_setup.first()]
         # print("batch split first_adapter", first_adapter)

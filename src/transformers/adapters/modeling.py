@@ -153,16 +153,20 @@ class Adapter(nn.Module):
 
         if self.original_ln_before:
             if layer_norm:
-                if hidden_states is not None and input_tensor is not None:
-                    hidden_states = layer_norm(hidden_states + input_tensor)
-
-                elif hidden_states is None and input_tensor is not None:
-                    hidden_states = layer_norm(input_tensor)
+                hidden_states = layer_norm(hidden_states + input_tensor)
             else:
-                if hidden_states is not None and input_tensor is not None:
-                    hidden_states = hidden_states + input_tensor
-                elif hidden_states is None:
-                    hidden_states = input_tensor
+                hidden_states = hidden_states + input_tensor
+            # if layer_norm:
+            #     if hidden_states is not None and input_tensor is not None:
+            #         hidden_states = layer_norm(hidden_states + input_tensor)
+
+            #     elif hidden_states is None and input_tensor is not None:
+            #         hidden_states = layer_norm(input_tensor)
+            # else:
+            #     if hidden_states is not None and input_tensor is not None:
+            #         hidden_states = hidden_states + input_tensor
+            #     elif hidden_states is None:
+            #         hidden_states = input_tensor
 
         if not self.residual_before_ln:
             residual = hidden_states
@@ -220,16 +224,20 @@ class Adapter(nn.Module):
         """
         if self.original_ln_after:
             if layer_norm:
-                if hidden_states is not None and input_tensor is not None:
-                    hidden_states = layer_norm(hidden_states + input_tensor)
-
-                elif hidden_states is None and input_tensor is not None:
-                    hidden_states = layer_norm(input_tensor)
+                hidden_states = layer_norm(hidden_states + input_tensor)
             else:
-                if hidden_states is not None and input_tensor is not None:
-                    hidden_states = hidden_states + input_tensor
-                elif hidden_states is None:
-                    hidden_states = input_tensor
+                hidden_states = hidden_states + input_tensor
+            # if layer_norm:
+            #     if hidden_states is not None and input_tensor is not None:
+            #         hidden_states = layer_norm(hidden_states + input_tensor)
+
+            #     elif hidden_states is None and input_tensor is not None:
+            #         hidden_states = layer_norm(input_tensor)
+            # else:
+            #     if hidden_states is not None and input_tensor is not None:
+            #         hidden_states = hidden_states + input_tensor
+            #     elif hidden_states is None:
+            #         hidden_states = input_tensor
 
         return hidden_states
 
@@ -319,16 +327,20 @@ class ParallelAdapter(Adapter):
 
         if self.original_ln_after:
             if layer_norm:
-                if hidden_states is not None and input_tensor is not None:
-                    hidden_states = layer_norm(hidden_states + input_tensor)
-
-                elif hidden_states is None and input_tensor is not None:
-                    hidden_states = layer_norm(input_tensor)
+                hidden_states = layer_norm(hidden_states + input_tensor)
             else:
-                if hidden_states is not None and input_tensor is not None:
-                    hidden_states = hidden_states + input_tensor
-                elif hidden_states is None:
-                    hidden_states = input_tensor
+                hidden_states = hidden_states + input_tensor
+            # if layer_norm:
+            #     if hidden_states is not None and input_tensor is not None:
+            #         hidden_states = layer_norm(hidden_states + input_tensor)
+
+            #     elif hidden_states is None and input_tensor is not None:
+            #         hidden_states = layer_norm(input_tensor)
+            # else:
+            #     if hidden_states is not None and input_tensor is not None:
+            #         hidden_states = hidden_states + input_tensor
+            #     elif hidden_states is None:
+            #         hidden_states = input_tensor
 
         return hidden_states
 
