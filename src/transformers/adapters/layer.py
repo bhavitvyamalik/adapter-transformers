@@ -503,7 +503,13 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                 children_hidden.append(child)
             # Case 4: We have a single adapter which is part of this module -> forward pass
             elif adapter_block in self.adapters:
-
+                random.seed(self.count + self.layer_idx + i)
+                num = random.random()
+                if num <= 0.25:
+                    # print(f"dropped {adapter_block} here, {num}, {self.count}, {self.layer_idx}")
+                    self.count += 1
+                    children_hidden.append(hidden_states[batch_idx[0] : batch_idx[1]])
+                    continue
                 adapter_layer = self.adapters[adapter_block]
                 context = ForwardContext.get_context()
                 layer_output = adapter_layer(
