@@ -452,14 +452,14 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                 )
             )
     
-        if self.layer_idx <= 23:
-            random.seed(self.count + self.layer_idx)
-            num = random.random()
-            self.count += 1
-            if num <= 0.05:
-                return input_tensor  # returning input tensor instead
-            elif num <=0.25:
-                return hidden_states  # returning hidden_states
+        # if self.layer_idx <= 23:
+        #     random.seed(self.count + self.layer_idx)
+        #     num = random.random()
+        #     self.count += 1
+        #     if num <= 0.05:
+        #         return input_tensor  # returning input tensor instead
+        #     elif num <=0.25:
+        #         return hidden_states  # returning hidden_states
                         
         first_adapter = self.adapters[adapter_setup.first()]
         # print("batch split first_adapter", first_adapter)
